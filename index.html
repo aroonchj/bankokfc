@@ -326,10 +326,10 @@
   .sponsor-wall-top{
     background:var(--white);
     display:flex; flex-wrap:wrap; align-items:center; justify-content:center;
-    gap:70px; padding:56px 28px;
+    gap:50px 70px; padding:56px 28px;
   }
   .sponsor-top-item{
-    display:flex; align-items:center; justify-content:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
     filter:grayscale(1) opacity(0.82); transition:filter .35s ease, transform .35s ease;
   }
   .sponsor-top-item:hover{filter:grayscale(0) opacity(1); transform:translateY(-2px);}
@@ -337,6 +337,10 @@
   .sponsor-top-item.text-logo{
     font-family:var(--display); font-weight:800; font-size:28px; letter-spacing:0.02em;
     color:var(--ink); text-transform:uppercase;
+  }
+  .sponsor-top-item small{
+    display:block; font-family:var(--body); font-weight:400; font-size:11.5px;
+    letter-spacing:0.01em; color:rgba(14,12,10,0.55); text-transform:none; text-align:center;
   }
 
   .sponsor-wall-grid{
@@ -361,7 +365,7 @@
   }
 
   @media (max-width:900px){
-    .sponsor-wall-top{gap:44px; padding:44px 24px;}
+    .sponsor-wall-top{gap:36px 44px; padding:44px 24px;}
     .sponsor-top-item img{height:52px;}
     .sponsor-wall-grid{gap:34px 44px; padding:40px 24px;}
   }
@@ -643,24 +647,27 @@
   </div>
 
   <div class="sponsor-wall-top reveal">
-    <div class="sponsor-top-item"><img src="assets/img/sponsor_barber.png" alt="เรื่องของผม Barber Shop"></div>
-    <div class="sponsor-top-item text-logo">เลขานัท</div>
+    <div class="sponsor-top-item">
+      <img src="assets/img/sponsor_barber.png" alt="เรื่องของผม Barber Shop">
+      <small>เรื่องของผม บาร์เบอร์</small>
+    </div>
+    <div class="sponsor-top-item">
+      <span class="text-logo">เลขานัท</span>
+      <small>ธนิศร์ ทองสุข เลขานุการนายกฯ อบจ.สงขลา</small>
+    </div>
   </div>
 
   <div class="sponsor-wall-grid reveal">
     <div class="sponsor-grid-item">
       <span>นายบ้านโชติ</span>
-      <small>ผู้ใหญ่บ้าน หมู่ที่ 6</small>
     </div>
     <div class="sponsor-grid-item">
       <span>อบต. ปิยะ</span>
-      <small>สมาชิก อบต. หมู่ที่ 6</small>
     </div>
     <div class="sponsor-grid-item"><span>พ.ต.อ. กุศล มณีรัตน์</span></div>
     <div class="sponsor-grid-item"><span>นวลน้ำยาง</span></div>
     <div class="sponsor-grid-item">
       <img src="assets/img/sponsor_mad.png" alt="Mai Aroon Design">
-      <span>Mai Aroon Design</span>
     </div>
   </div>
 </section>

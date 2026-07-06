@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>แอดมิน นักกีฬา — BANKOK FC</title>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -275,14 +277,14 @@
     reader.onload = e => {
       const img = new Image();
       img.onload = () => {
-        const maxSize = 320;
+        const maxSize = 260;
         let w = img.width, h = img.height;
         if (w > h && w > maxSize){ h = h*(maxSize/w); w = maxSize; }
         else if (h > maxSize){ w = w*(maxSize/h); h = maxSize; }
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        photoDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+        photoDataUrl = canvas.toDataURL('image/jpeg', 0.68);
         photoPreview.innerHTML = `<img src="${photoDataUrl}" alt="preview">`;
       };
       img.src = e.target.result;
@@ -332,6 +334,13 @@
 
   cancelEditBtn.addEventListener('click', resetForm);
 
+  function withTimeout(promise, ms){
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), ms))
+    ]);
+  }
+
   addPlayerBtn.addEventListener('click', async () => {
     const firstName = firstNameInput.value.trim();
     const lastName = lastNameInput.value.trim();
@@ -346,25 +355,31 @@
     addPlayerBtn.textContent = 'กำลังบันทึก...';
     try {
       if (editingId){
-        await db.collection('players').doc(editingId).update({
+        await withTimeout(db.collection('players').doc(editingId).update({
           firstName, lastName, number: number || null, position: position || null,
           photo: photoDataUrl || null,
           pin: ADMIN_PIN
-        });
+        }), 15000);
         showMsg('แก้ไขข้อมูลนักกีฬาเรียบร้อยแล้ว ✓', true);
       } else {
-        await db.collection('players').add({
+        await withTimeout(db.collection('players').add({
           firstName, lastName, number: number || null, position: position || null,
           photo: photoDataUrl || null,
           pin: ADMIN_PIN,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+        }), 15000);
         showMsg('เพิ่มนักกีฬาเรียบร้อยแล้ว ✓', true);
       }
       resetForm();
     } catch (err){
       console.error(err);
-      showMsg('เกิดข้อผิดพลาด: ตรวจสอบการตั้งค่า Firebase / Firestore Rules', false);
+      if (err.message === 'TIMEOUT'){
+        showMsg('บันทึกช้าผิดปกติ (เกิน 15 วิ) ตรวจสอบอินเทอร์เน็ต แล้วลองใหม่อีกครั้ง', false);
+      } else if (err.code === 'permission-denied'){
+        showMsg('ไม่มีสิทธิ์บันทึก: ตรวจสอบว่า Firestore Rules ตรงกับ ADMIN_PIN ในไฟล์ firebase-config.js', false);
+      } else {
+        showMsg('เกิดข้อผิดพลาด: ตรวจสอบการตั้งค่า Firebase / Firestore Rules', false);
+      }
       addPlayerBtn.textContent = editingId ? 'บันทึกการแก้ไข' : 'บันทึกนักกีฬา';
     }
     addPlayerBtn.disabled = false;

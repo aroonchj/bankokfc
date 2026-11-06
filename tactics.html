@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>กระดานแท็กติก — BANKOK FC</title>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e0c0a; --ink-2:#1b1512; --ink-3:#241c17;
+    --red:#c8102e; --red-deep:#7a0e1f; --red-bright:#e11d2e;
+    --gold:#c9a227; --gold-soft:#e4c766;
+    --white:#fbf8f2; --line: rgba(241,233,216,0.14); --line-strong: rgba(241,233,216,0.26);
+    --pitch:#1e5b3f; --pitch-dark:#194f37;
+    --mute:rgba(251,248,242,0.6);
+    --display: "Kanit", sans-serif; --body: "IBM Plex Sans Thai", "Kanit", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--ink); color:var(--white); font-family:var(--body); -webkit-font-smoothing:antialiased;}
+  img{max-width:100%; display:block;}
+  a{color:inherit; text-decoration:none;}
+  h1,h2,h3{font-family:var(--display); margin:0;}
+  input, select, button{font-family:var(--body);}
+  .container{width:100%; max-width:1100px; margin:0 auto; padding:0 20px;}
+
+  header{
+    padding:14px 0; border-bottom:1px solid var(--line);
+    background:rgba(14,12,10,0.94); backdrop-filter:blur(10px);
+    position:sticky; top:0; z-index:30;
+  }
+  .nav-inner{display:flex; align-items:center; justify-content:space-between; gap:10px; max-width:1100px; margin:0 auto; padding:0 20px;}
+  .brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .brand img{height:36px; width:36px; flex:none;}
+  .brand b{font-family:var(--display); font-size:14px; letter-spacing:0.05em; white-space:nowrap;}
+  .head-links{display:flex; gap:8px;}
+  .head-link{
+    font-family:var(--display); font-size:12.5px; color:rgba(251,248,242,0.8);
+    border:1px solid var(--line); padding:8px 12px; background:transparent; cursor:pointer; white-space:nowrap;
+  }
+  .head-link:hover{color:var(--gold-soft); border-color:var(--gold);}
+
+  /* ---- Lock ---- */
+  #lockScreen{min-height:70vh; display:flex; align-items:center; justify-content:center; padding:40px 20px;}
+  .lock-card{width:100%; max-width:380px; border:1px solid var(--line); background:var(--ink-2); padding:34px 28px; text-align:center;}
+  .lock-card h2{font-size:22px; text-transform:uppercase; margin-bottom:8px;}
+  .lock-card p{font-size:13.5px; color:var(--mute); margin:0 0 20px; line-height:1.7;}
+  .lock-card input{width:100%; padding:13px 14px; background:var(--ink); border:1px solid var(--line); color:var(--white); font-size:15px; text-align:center; margin-bottom:12px;}
+  .lock-card input:focus{outline:none; border-color:var(--gold);}
+  .lock-error{display:none; color:var(--red-bright); font-size:13px; margin-top:12px;}
+
+  .btn{
+    font-family:var(--display); font-weight:600; font-size:13.5px; letter-spacing:0.03em;
+    border:1px solid var(--line-strong); background:var(--ink-3); color:var(--white);
+    padding:10px 16px; cursor:pointer; transition:.2s; display:inline-flex; align-items:center; gap:8px; justify-content:center;
+  }
+  .btn:hover{border-color:var(--gold);}
+  .btn.primary{background:var(--red); border-color:var(--red); }
+  .btn.primary:hover{background:var(--red-bright);}
+  .btn.small{padding:7px 12px; font-size:12.5px;}
+  .btn.ghost{background:transparent;}
+  .btn.danger{color:#ff8a8a; border-color:rgba(255,100,100,0.35);}
+  .btn.danger:hover{background:rgba(255,80,80,0.12);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .wide{width:100%;}
+
+  /* ---- App ---- */
+  #app{display:none; padding:26px 0 80px;}
+  .kicker{font-family:var(--display); font-size:12px; letter-spacing:0.28em; font-weight:600; color:var(--red-bright); text-transform:uppercase; margin-bottom:8px;}
+  .title{font-size:clamp(24px,4vw,34px); font-weight:700; line-height:1.15;}
+  .sub{color:var(--mute); font-size:13.5px; line-height:1.75; margin:8px 0 18px; max-width:720px;}
+
+  .controls-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center;}
+  .seg{display:flex; background:var(--ink-3); padding:3px; border:1px solid var(--line);}
+  .seg button{appearance:none; border:none; background:transparent; color:var(--mute); font-family:var(--display); font-weight:600; font-size:13px; padding:8px 14px; cursor:pointer; white-space:nowrap;}
+  .seg button.active{background:var(--gold); color:#1a1400;}
+  select, .text-input{
+    background:var(--ink); border:1px solid var(--line-strong); color:var(--white);
+    padding:9px 12px; font-size:14px; min-width:150px;
+  }
+  select:focus, .text-input:focus{outline:none; border-color:var(--gold);}
+
+  .tactics-layout{display:grid; grid-template-columns:250px 1fr; gap:18px; align-items:start;}
+  .side-panel{border:1px solid var(--line); background:var(--ink-2); padding:14px; position:sticky; top:72px;}
+  .side-title{font-size:12px; letter-spacing:0.08em; color:var(--mute); font-weight:500;}
+  .bench-list{display:flex; flex-direction:column; gap:8px; margin-top:10px; max-height:420px; overflow-y:auto;}
+  .bench-chip{
+    display:flex; align-items:center; gap:9px; background:var(--ink-3); border:1px solid var(--line);
+    padding:7px 9px; cursor:grab; user-select:none; touch-action:manipulation; flex:none;
+  }
+  .bench-chip.selected{border-color:var(--gold-soft); background:rgba(201,162,39,0.16); box-shadow:0 0 0 1px var(--gold-soft) inset;}
+  .av{width:32px; height:32px; border-radius:50%; overflow:hidden; flex:none; background:var(--red); border:1.5px solid var(--gold); display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:800; font-size:12px; position:relative;}
+  .av img{width:100%; height:100%; object-fit:cover;}
+  .bname{font-size:13px; font-weight:600; font-family:var(--display); line-height:1.2;}
+  .bpos{font-size:10.5px; color:var(--mute);}
+  .bench-num{margin-left:auto; font-family:var(--display); font-weight:800; font-size:12px; color:var(--gold-soft);}
+  .empty-note{color:var(--mute); font-size:13px; padding:16px; text-align:center; border:1px dashed var(--line-strong);}
+
+  .pitch-wrap{border:1px solid var(--line); background:var(--ink-2); padding:14px;}
+  .pitch{
+    position:relative; width:100%; aspect-ratio:68/100; max-width:560px; margin:0 auto;
+    background:repeating-linear-gradient(180deg, var(--pitch) 0 12.5%, var(--pitch-dark) 12.5% 25%);
+    border:3px solid rgba(255,255,255,.55); border-radius:6px; overflow:hidden;
+    touch-action:pan-y; user-select:none;
+  }
+  .pitch.arrow-mode{touch-action:none;}
+  .pitch::before,.pitch::after{content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border:2px solid rgba(255,255,255,.55); border-radius:50%; width:26%; aspect-ratio:1;}
+  .pitch::after{width:2%; border-width:0; background:rgba(255,255,255,.7);}
+  .halfline{position:absolute; left:0; right:0; top:50%; height:2px; background:rgba(255,255,255,.55);}
+  .box{position:absolute; left:50%; transform:translateX(-50%); border:2px solid rgba(255,255,255,.55);}
+  .box.top{top:0; width:60%; height:15%; border-top:none;}
+  .box.bottom{bottom:0; width:60%; height:15%; border-bottom:none;}
+  .box.top.small{width:32%; height:7%;}
+  .box.bottom.small{width:32%; height:7%;}
+
+  .slot{
+    position:absolute; width:15%; aspect-ratio:1; transform:translate(-50%,-50%);
+    border:2px dashed rgba(255,255,255,.38); border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:rgba(255,255,255,.45); font-size:11px; font-family:var(--display); font-weight:600; z-index:4;
+  }
+  .pitch.has-selection .slot{border-color:var(--gold-soft); color:var(--gold-soft); cursor:pointer; animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(228,199,102,.55);} 50%{box-shadow:0 0 0 7px rgba(228,199,102,0);}}
+  .pitch.arrow-mode .slot, .pitch.arrow-mode .chip{pointer-events:none;}
+
+  .chip{
+    position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:3px;
+    cursor:grab; touch-action:none; z-index:5; width:15%;
+  }
+  .chip.dragging{z-index:20; cursor:grabbing; filter:drop-shadow(0 6px 10px rgba(0,0,0,.6));}
+  .chip .av{width:38px; height:38px; font-size:14px; box-shadow:0 3px 8px rgba(0,0,0,.5);}
+  .chip .badge{position:absolute; right:-5px; bottom:-4px; min-width:18px; height:18px; padding:0 4px; border-radius:9px; background:var(--red); border:1.5px solid var(--gold); font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; font-family:var(--display); color:#fff;}
+  .chip .cname{font-size:10.5px; font-weight:700; background:rgba(0,0,0,.6); padding:1px 6px; white-space:nowrap; max-width:74px; overflow:hidden; text-overflow:ellipsis; border-radius:4px;}
+  .chip .chip-x{
+    position:absolute; top:-7px; right:2px; width:20px; height:20px; border-radius:50%; border:none;
+    background:#000; color:#fff; font-size:13px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+    box-shadow:0 0 0 1px rgba(255,255,255,.4);
+  }
+  #arrowLayer{position:absolute; inset:0; width:100%; height:100%; z-index:15; pointer-events:none;}
+  .pitch.arrow-mode #arrowLayer{pointer-events:auto; cursor:crosshair;}
+
+  .pitch-toolbar{display:flex; justify-content:space-between; align-items:center; margin-top:14px; gap:10px; flex-wrap:wrap;}
+  .pitch-info{font-size:12px; color:var(--mute);}
+  .save-row{display:flex; gap:8px; flex-wrap:wrap; flex:1; justify-content:flex-end;}
+  .save-row .text-input{flex:1; min-width:150px; max-width:260px;}
+
+  /* history */
+  .history{margin-top:40px;}
+  .history h2{font-size:20px; text-transform:uppercase; margin-bottom:14px;}
+  .history-list{display:flex; flex-direction:column; gap:10px;}
+  .history-item{border:1px solid var(--line); background:var(--ink-2); padding:12px 14px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .hi-tag{font-family:var(--display); font-weight:800; font-size:11px; color:var(--gold-soft); border:1px solid var(--gold); padding:4px 8px;}
+  .hi-name{font-family:var(--display); font-weight:600; font-size:15px;}
+  .hi-meta{font-size:12px; color:var(--mute);}
+  .hi-actions{margin-left:auto; display:flex; gap:8px;}
+
+  .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px); background:var(--ink-3); border:1px solid var(--gold); padding:10px 20px; font-size:13.5px; z-index:100; opacity:0; pointer-events:none; transition:.25s; max-width:90vw; text-align:center;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:900px){
+    .tactics-layout{grid-template-columns:1fr;}
+    .side-panel{position:static;}
+    .bench-list{flex-direction:row; overflow-x:auto; overflow-y:hidden; max-height:none; padding-bottom:6px;}
+    .bench-chip{min-width:132px;}
+  }
+  @media (max-width:520px){
+    .brand b{font-size:12.5px;}
+    .head-link{padding:7px 10px; font-size:12px;}
+    .pitch-wrap{padding:10px;}
+    .chip .av{width:34px; height:34px; font-size:13px;}
+    .chip .cname{font-size:9.5px; max-width:58px;}
+    .save-row{justify-content:stretch;}
+    .save-row .text-input{max-width:none;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/img/crest.png" alt="Bankok FC">
+      <b>TACTICS · แท็กติก</b>
+    </a>
+    <div class="head-links">
+      <a class="head-link" href="admin.html">จัดการนักกีฬา</a>
+      <button class="head-link" id="logoutBtn" style="display:none;">ออก</button>
+    </div>
+  </div>
+</header>
+
+<div id="lockScreen">
+  <div class="lock-card">
+    <h2>Coach Access</h2>
+    <p>กระดานแท็กติกสำหรับโค้ช/ผู้จัดการทีม<br>ใช้รหัสผ่านเดียวกับหน้าแอดมิน</p>
+    <input type="password" id="pinInput" placeholder="รหัสผ่าน" autocomplete="off">
+    <button class="btn primary wide" id="pinSubmit">เข้าสู่ระบบ</button>
+    <div class="lock-error" id="lockError">รหัสผ่านไม่ถูกต้อง ลองใหม่อีกครั้ง</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="container">
+    <div class="kicker">Tactics Board</div>
+    <h1 class="title">กระดานแท็กติก</h1>
+    <p class="sub">เลือกรูปแบบสนามและฟอร์เมชัน แล้ว <b>แตะ</b> ชื่อผู้เล่นจากรายชื่อสำรอง จากนั้นแตะวงกลมตำแหน่งบนสนาม (บนคอมลากวางได้) — ลากปรับตำแหน่งได้อิสระ และสลับเป็นโหมดวาดลูกศรเพื่อออกแบบเกมรุก/เกมรับ</p>
+
+    <div class="controls-row">
+      <div class="seg" id="segMode">
+        <button data-mode="7" class="active">7 คน</button>
+        <button data-mode="11">11 คน</button>
+      </div>
+      <select id="formationSelect"></select>
+      <button class="btn small ghost" id="btnClearPitch">ล้างสนาม</button>
+    </div>
+
+    <div class="controls-row">
+      <div class="seg" id="segBoardMode">
+        <button data-boardmode="arrange" class="active">จัดผู้เล่น</button>
+        <button data-boardmode="arrow">วาดลูกศร</button>
+      </div>
+      <div class="seg" id="segArrowStyle" style="display:none;">
+        <button data-arrowstyle="run" class="active">เส้นทึบ (วิ่ง)</button>
+        <button data-arrowstyle="pass">เส้นประ (ส่งบอล)</button>
+      </div>
+      <button class="btn small ghost" id="btnUndoArrow" style="display:none;">ย้อนลูกศร</button>
+      <button class="btn small ghost" id="btnClearArrows" style="display:none;">ลบลูกศรทั้งหมด</button>
+    </div>
+    <p class="sub" id="arrowHint" style="display:none; margin-top:-4px;">ลากนิ้ว/เมาส์บนสนามจากจุดเริ่มไปจุดปลายเพื่อวาดลูกศร</p>
+
+    <div class="tactics-layout">
+      <div class="side-panel">
+        <div class="side-title">ผู้เล่นสำรอง — แตะเพื่อเลือก</div>
+        <input class="text-input wide" id="benchSearch" placeholder="ค้นหาชื่อ/เบอร์..." style="margin-top:8px; min-width:0;">
+        <div class="bench-list" id="benchList"><div class="empty-note">กำลังโหลดรายชื่อ...</div></div>
+      </div>
+
+      <div class="pitch-wrap">
+        <div class="pitch" id="pitch">
+          <div class="halfline"></div>
+          <div class="box top"></div>
+          <div class="box bottom"></div>
+          <div class="box top small"></div>
+          <div class="box bottom small"></div>
+          <svg id="arrowLayer">
+            <defs>
+              <marker id="arrowHeadRun" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#fff"></path>
+              </marker>
+              <marker id="arrowHeadPass" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#e4c766"></path>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+        <div class="pitch-toolbar">
+          <div class="pitch-info" id="pitchInfo"></div>
+          <div class="save-row">
+            <input class="text-input" id="tacticName" placeholder="ตั้งชื่อแผน เช่น เกมรับ">
+            <button class="btn primary" id="btnSaveTactic">บันทึกแผน</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="history">
+      <h2>แผนที่บันทึกไว้</h2>
+      <div class="history-list" id="historyList"><div class="empty-note">กำลังโหลด...</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script>
+/* ============================= AUTH GATE (shares session with admin.html) ============================= */
+const lockScreen = document.getElementById('lockScreen');
+const appEl = document.getElementById('app');
+const pinInput = document.getElementById('pinInput');
+const lockError = document.getElementById('lockError');
+const logoutBtn = document.getElementById('logoutBtn');
+let started = false;
+
+function unlock(){
+  lockScreen.style.display = 'none';
+  appEl.style.display = 'block';
+  logoutBtn.style.display = 'inline-block';
+  if(!started){ started = true; startApp(); }
+}
+document.getElementById('pinSubmit').addEventListener('click', () => {
+  if (pinInput.value === ADMIN_PIN){
+    sessionStorage.setItem('bankokAdminAuthed', 'yes');
+    unlock();
+  } else {
+    lockError.style.display = 'block';
+  }
+});
+pinInput.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pinSubmit').click(); });
+logoutBtn.addEventListener('click', () => {
+  sessionStorage.removeItem('bankokAdminAuthed');
+  location.reload();
+});
+
+/* ============================= STATE ============================= */
+let players = [];          // {id, number, name, fullName, position:'GK'|'DF'|'MF'|'FW'|'', photo}
+let tactics = [];
+let currentMode = '7';
+let currentFormation = null;
+let assignment = {};       // slotIndex -> playerId
+let freePos = {};          // playerId -> {x,y} percent
+let selectedPid = null;    // bench player chosen for tap-to-place
+let boardMode = 'arrange';
+let arrows = [];           // [{x1,y1,x2,y2,style}]
+let arrowStyle = 'run';
+let suppressClick = false;
+
+const POS_MAP = {'ผู้รักษาประตู':'GK','กองหลัง':'DF','กองกลาง':'MF','กองหน้า':'FW'};
+
+const FORMATIONS = {
+  '7': {
+    '2-3-1': [{r:'GK',x:50,y:92},{r:'DF',x:30,y:70},{r:'DF',x:70,y:70},{r:'MF',x:20,y:45},{r:'MF',x:50,y:45},{r:'MF',x:80,y:45},{r:'FW',x:50,y:15}],
+    '3-2-1': [{r:'GK',x:50,y:92},{r:'DF',x:20,y:70},{r:'DF',x:50,y:70},{r:'DF',x:80,y:70},{r:'MF',x:35,y:45},{r:'MF',x:65,y:45},{r:'FW',x:50,y:15}],
+    '3-1-2': [{r:'GK',x:50,y:92},{r:'DF',x:20,y:70},{r:'DF',x:50,y:70},{r:'DF',x:80,y:70},{r:'MF',x:50,y:45},{r:'FW',x:35,y:15},{r:'FW',x:65,y:15}],
+    '1-3-2': [{r:'GK',x:50,y:92},{r:'DF',x:50,y:70},{r:'MF',x:20,y:45},{r:'MF',x:50,y:45},{r:'MF',x:80,y:45},{r:'FW',x:35,y:15},{r:'FW',x:65,y:15}],
+    '2-1-3': [{r:'GK',x:50,y:92},{r:'DF',x:30,y:70},{r:'DF',x:70,y:70},{r:'MF',x:50,y:45},{r:'FW',x:20,y:15},{r:'FW',x:50,y:15},{r:'FW',x:80,y:15}]
+  },
+  '11': {
+    '4-4-2': [{r:'GK',x:50,y:94},{r:'DF',x:15,y:76},{r:'DF',x:38,y:78},{r:'DF',x:62,y:78},{r:'DF',x:85,y:76},{r:'MF',x:15,y:50},{r:'MF',x:38,y:48},{r:'MF',x:62,y:48},{r:'MF',x:85,y:50},{r:'FW',x:38,y:18},{r:'FW',x:62,y:18}],
+    '4-3-3': [{r:'GK',x:50,y:94},{r:'DF',x:15,y:76},{r:'DF',x:38,y:78},{r:'DF',x:62,y:78},{r:'DF',x:85,y:76},{r:'MF',x:25,y:50},{r:'MF',x:50,y:48},{r:'MF',x:75,y:50},{r:'FW',x:15,y:18},{r:'FW',x:50,y:15},{r:'FW',x:85,y:18}],
+    '3-5-2': [{r:'GK',x:50,y:94},{r:'DF',x:25,y:78},{r:'DF',x:50,y:80},{r:'DF',x:75,y:78},{r:'MF',x:10,y:50},{r:'MF',x:30,y:48},{r:'MF',x:50,y:46},{r:'MF',x:70,y:48},{r:'MF',x:90,y:50},{r:'FW',x:38,y:18},{r:'FW',x:62,y:18}],
+    '4-2-3-1': [{r:'GK',x:50,y:94},{r:'DF',x:15,y:78},{r:'DF',x:38,y:80},{r:'DF',x:62,y:80},{r:'DF',x:85,y:78},{r:'DM',x:35,y:58},{r:'DM',x:65,y:58},{r:'AM',x:20,y:35},{r:'AM',x:50,y:33},{r:'AM',x:80,y:35},{r:'FW',x:50,y:14}],
+    '3-4-3': [{r:'GK',x:50,y:94},{r:'DF',x:25,y:78},{r:'DF',x:50,y:80},{r:'DF',x:75,y:78},{r:'MF',x:15,y:50},{r:'MF',x:38,y:48},{r:'MF',x:62,y:48},{r:'MF',x:85,y:50},{r:'FW',x:15,y:18},{r:'FW',x:50,y:15},{r:'FW',x:85,y:18}],
+    '4-5-1': [{r:'GK',x:50,y:94},{r:'DF',x:15,y:78},{r:'DF',x:38,y:80},{r:'DF',x:62,y:80},{r:'DF',x:85,y:78},{r:'MF',x:10,y:50},{r:'MF',x:30,y:48},{r:'MF',x:50,y:46},{r:'MF',x:70,y:48},{r:'MF',x:90,y:50},{r:'FW',x:50,y:16}]
+  }
+};
+
+/* ============================= UTIL ============================= */
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function withTimeout(promise, ms){
+  return Promise.race([promise, new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT')), ms))]);
+}
+function avatarHtml(p){
+  return p.photo
+    ? `<img src="${esc(p.photo)}" alt="">`
+    : `<span>${esc(p.number==null?'-':p.number)}</span>`;
+}
+function hasWork(){ return Object.keys(assignment).length>0 || arrows.length>0; }
+function confirmReset(){
+  return !hasWork() || confirm('การเปลี่ยนรูปแบบจะล้างผู้เล่นและลูกศรบนสนามตอนนี้ ต้องการทำต่อหรือไม่?');
+}
+
+/* ============================= DATA ============================= */
+function startApp(){
+  buildFormationOptions();
+  renderPitch(); renderBench();
+  listenPlayers();
+  listenTactics();
+}
+
+function listenPlayers(){
+  // ใช้ collection "players" ชุดเดียวกับหน้านักกีฬา/แอดมิน (เรียงเลขเสื้อฝั่งเบราว์เซอร์ เพราะเก็บเบอร์เป็นข้อความ)
+  db.collection('players').onSnapshot(snap=>{
+    players = snap.docs.map(d=>{
+      const p = d.data();
+      const n = parseInt(p.number, 10);
+      return {
+        id: d.id,
+        number: isNaN(n) ? null : n,
+        name: (p.firstName || p.lastName || '').trim(),
+        fullName: ((p.firstName||'') + ' ' + (p.lastName||'')).trim(),
+        position: POS_MAP[p.position] || '',
+        photo: p.photo || ''
+      };
+    }).sort((a,b)=>{
+      if(a.number==null && b.number==null) return a.name.localeCompare(b.name,'th');
+      if(a.number==null) return 1; if(b.number==null) return -1;
+      return a.number - b.number;
+    });
+    // ตัดผู้เล่นที่ถูกลบออกจากสนาม
+    const ids = new Set(players.map(p=>p.id));
+    Object.keys(assignment).forEach(k=>{ if(!ids.has(assignment[k])){ delete assignment[k]; } });
+    if(selectedPid && !ids.has(selectedPid)) selectedPid = null;
+    renderBench(); renderPitch();
+  }, err=>{
+    console.error(err);
+    document.getElementById('benchList').innerHTML = '<div class="empty-note">โหลดรายชื่อนักกีฬาไม่สำเร็จ</div>';
+    toast('โหลดรายชื่อนักกีฬาไม่ได้ ตรวจสอบอินเทอร์เน็ต/Firebase');
+  });
+}
+
+function listenTactics(){
+  db.collection('tactic_plans').orderBy('createdAt','desc').onSnapshot(snap=>{
+    tactics = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    renderHistory();
+  }, err=>{
+    console.error(err);
+    document.getElementById('historyList').innerHTML =
+      '<div class="empty-note">โหลดแผนไม่ได้ — ต้องเพิ่มกฎ tactic_plans ใน Firestore Rules ก่อน (ดูไฟล์ "วิธีตั้งค่า Firebase.txt")</div>';
+  });
+}
+
+/* ============================= MODE / FORMATION ============================= */
+function buildFormationOptions(){
+  const sel = document.getElementById('formationSelect');
+  const opts = Object.keys(FORMATIONS[currentMode]);
+  sel.innerHTML = opts.map(f=>`<option value="${f}">${f}</option>`).join('');
+  currentFormation = opts[0];
+  sel.value = currentFormation;
+}
+function resetBoard(){ assignment = {}; freePos = {}; arrows = []; selectedPid = null; }
+
+document.getElementById('segMode').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b || b.dataset.mode===currentMode) return;
+  if(!confirmReset()) return;
+  currentMode = b.dataset.mode;
+  document.querySelectorAll('#segMode button').forEach(x=>x.classList.toggle('active', x===b));
+  resetBoard(); buildFormationOptions(); renderPitch(); renderBench();
+});
+document.getElementById('formationSelect').addEventListener('change', e=>{
+  if(!confirmReset()){ e.target.value = currentFormation; return; }
+  currentFormation = e.target.value;
+  resetBoard(); renderPitch(); renderBench();
+});
+document.getElementById('btnClearPitch').addEventListener('click', ()=>{
+  if(hasWork() && !confirm('ล้างสนามทั้งหมดใช่หรือไม่?')) return;
+  resetBoard(); renderPitch(); renderBench();
+  toast('ล้างสนามแล้ว');
+});
+
+/* ============================= BOARD MODE / ARROWS ============================= */
+document.getElementById('segBoardMode').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  boardMode = b.dataset.boardmode;
+  document.querySelectorAll('#segBoardMode button').forEach(x=>x.classList.toggle('active', x===b));
+  const isArrow = boardMode==='arrow';
+  if(isArrow){ selectedPid = null; renderBench(); }
+  document.getElementById('pitch').classList.toggle('arrow-mode', isArrow);
+  document.getElementById('pitch').classList.toggle('has-selection', !isArrow && !!selectedPid);
+  document.getElementById('segArrowStyle').style.display = isArrow?'flex':'none';
+  document.getElementById('btnUndoArrow').style.display = isArrow?'inline-flex':'none';
+  document.getElementById('btnClearArrows').style.display = isArrow?'inline-flex':'none';
+  document.getElementById('arrowHint').style.display = isArrow?'block':'none';
+  renderPitch();
+});
+document.getElementById('segArrowStyle').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  arrowStyle = b.dataset.arrowstyle;
+  document.querySelectorAll('#segArrowStyle button').forEach(x=>x.classList.toggle('active', x===b));
+});
+document.getElementById('btnUndoArrow').addEventListener('click', ()=>{ arrows.pop(); renderArrows(); });
+document.getElementById('btnClearArrows').addEventListener('click', ()=>{ arrows = []; renderArrows(); });
+
+(function setupArrowDrawing(){
+  const svg = document.getElementById('arrowLayer');
+  const pitch = document.getElementById('pitch');
+  let draft = null, draftLine = null;
+
+  function pct(ev){
+    const r = pitch.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(100, (ev.clientX-r.left)/r.width*100)),
+      y: Math.max(0, Math.min(100, (ev.clientY-r.top)/r.height*100))
+    };
+  }
+  function cleanup(){ if(draftLine) draftLine.remove(); draft = null; draftLine = null; }
+
+  svg.addEventListener('pointerdown', e=>{
+    if(boardMode!=='arrow') return;
+    e.preventDefault();
+    const p = pct(e);
+    draft = {x1:p.x, y1:p.y};
+    draftLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    draftLine.setAttribute('stroke', arrowStyle==='pass' ? '#e4c766' : '#fff');
+    draftLine.setAttribute('stroke-width','2.4');
+    if(arrowStyle==='pass') draftLine.setAttribute('stroke-dasharray','5,5');
+    draftLine.setAttribute('x1', p.x+'%'); draftLine.setAttribute('y1', p.y+'%');
+    draftLine.setAttribute('x2', p.x+'%'); draftLine.setAttribute('y2', p.y+'%');
+    svg.appendChild(draftLine);
+    svg.setPointerCapture && svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e=>{
+    if(!draft) return;
+    const p = pct(e);
+    draftLine.setAttribute('x2', p.x+'%'); draftLine.setAttribute('y2', p.y+'%');
+  });
+  svg.addEventListener('pointerup', e=>{
+    if(!draft) return;
+    const p = pct(e);
+    const dist = Math.hypot(p.x-draft.x1, p.y-draft.y1);
+    if(dist > 3) arrows.push({x1:draft.x1, y1:draft.y1, x2:p.x, y2:p.y, style:arrowStyle});
+    cleanup(); renderArrows();
+  });
+  svg.addEventListener('pointercancel', cleanup);
+})();
+
+function renderArrows(){
+  const svg = document.getElementById('arrowLayer');
+  svg.querySelectorAll('line.tac-arrow').forEach(n=>n.remove());
+  arrows.forEach(a=>{
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('class','tac-arrow');
+    line.setAttribute('x1', a.x1+'%'); line.setAttribute('y1', a.y1+'%');
+    line.setAttribute('x2', a.x2+'%'); line.setAttribute('y2', a.y2+'%');
+    line.setAttribute('stroke', a.style==='pass' ? '#e4c766' : '#fff');
+    line.setAttribute('stroke-width','2.4');
+    if(a.style==='pass') line.setAttribute('stroke-dasharray','5,5');
+    line.setAttribute('marker-end', a.style==='pass' ? 'url(#arrowHeadPass)' : 'url(#arrowHeadRun)');
+    svg.appendChild(line);
+  });
+}
+
+/* ============================= BENCH ============================= */
+document.getElementById('benchSearch').addEventListener('input', renderBench);
+
+function renderBench(){
+  const q = document.getElementById('benchSearch').value.trim().toLowerCase();
+  const assigned = new Set(Object.values(assignment));
+  const list = players.filter(p=>!assigned.has(p.id))
+    .filter(p=>!q || p.fullName.toLowerCase().includes(q) || String(p.number==null?'':p.number).includes(q));
+  const el = document.getElementById('benchList');
+  if(!players.length){ el.innerHTML = '<div class="empty-note">ยังไม่มีนักกีฬาในระบบ — เพิ่มได้ที่หน้า "จัดการนักกีฬา"</div>'; return; }
+  if(!list.length){ el.innerHTML = '<div class="empty-note">ไม่มีผู้เล่นในรายชื่อสำรอง</div>'; return; }
+  el.innerHTML = list.map(p=>`
+    <div class="bench-chip ${p.id===selectedPid?'selected':''}" data-pid="${esc(p.id)}">
+      <div class="av">${avatarHtml(p)}</div>
+      <div><div class="bname">${esc(p.name)}</div><div class="bpos">${p.position||'ยังไม่ระบุตำแหน่ง'}</div></div>
+      ${p.photo && p.number!=null ? `<div class="bench-num">${p.number}</div>` : ''}
+    </div>`).join('');
+  el.querySelectorAll('.bench-chip').forEach(chip=>{
+    chip.addEventListener('pointerdown', onBenchPointerDown);
+    chip.addEventListener('click', ()=>{
+      if(suppressClick || boardMode!=='arrange') return;
+      toggleSelect(chip.dataset.pid);
+    });
+  });
+}
+
+function toggleSelect(pid){
+  selectedPid = (selectedPid===pid) ? null : pid;
+  document.getElementById('pitch').classList.toggle('has-selection', !!selectedPid);
+  renderBench();
+  if(selectedPid) toast('เลือกแล้ว — แตะวงกลมตำแหน่งบนสนามเพื่อวาง');
+}
+
+/* ============================= DRAG (mouse from bench; any pointer for chips) ============================= */
+function nearestSlot(cx, cy){
+  const rect = document.getElementById('pitch').getBoundingClientRect();
+  if(cx < rect.left-40 || cx > rect.right+40 || cy < rect.top-40 || cy > rect.bottom+40) return null;
+  const slots = FORMATIONS[currentMode][currentFormation];
+  let best=-1, bestD=Infinity;
+  slots.forEach((s,i)=>{
+    const d = Math.hypot(cx-(rect.left+rect.width*s.x/100), cy-(rect.top+rect.height*s.y/100));
+    if(d<bestD){ bestD=d; best=i; }
+  });
+  return best>=0 ? best : null;
+}
+
+function onBenchPointerDown(e){
+  // ลากด้วยเมาส์เท่านั้น — บนมือถือใช้การแตะเลือกแล้วแตะตำแหน่ง (เลื่อนรายการได้ปกติ)
+  if(e.pointerType!=='mouse' || e.button!==0 || boardMode!=='arrange') return;
+  const pid = e.currentTarget.dataset.pid;
+  const p = players.find(x=>x.id===pid); if(!p) return;
+  const sx = e.clientX, sy = e.clientY;
+  let ghost = null, dragged = false;
+
+  function move(ev){
+    if(!dragged){
+      if(Math.hypot(ev.clientX-sx, ev.clientY-sy) < 6) return;
+      dragged = true;
+      ghost = document.createElement('div');
+      ghost.className = 'av';
+      ghost.style.cssText = 'position:fixed;z-index:999;pointer-events:none;width:40px;height:40px;';
+      ghost.innerHTML = avatarHtml(p);
+      document.body.appendChild(ghost);
+    }
+    ghost.style.left = (ev.clientX-20)+'px'; ghost.style.top = (ev.clientY-20)+'px';
+  }
+  function up(ev){
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+    if(!dragged) return;
+    ghost.remove();
+    suppressClick = true; setTimeout(()=>{ suppressClick = false; }, 0);
+    const idx = nearestSlot(ev.clientX, ev.clientY);
+    if(idx!=null) assignPlayerToSlot(idx, pid);
+  }
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
+}
+
+function assignPlayerToSlot(slotIndex, playerId){
+  const displaced = assignment[slotIndex];
+  if(displaced && displaced!==playerId) delete freePos[displaced];
+  Object.keys(assignment).forEach(k=>{ if(assignment[k]===playerId) delete assignment[k]; });
+  assignment[slotIndex] = playerId;
+  delete freePos[playerId];
+  selectedPid = null;
+  document.getElementById('pitch').classList.remove('has-selection');
+  renderPitch(); renderBench();
+}
+function removeFromPitch(playerId){
+  Object.keys(assignment).forEach(k=>{ if(assignment[k]===playerId) delete assignment[k]; });
+  delete freePos[playerId];
+  renderPitch(); renderBench();
+}
+
+function onChipPointerDown(e){
+  if(e.target.closest('.chip-x') || boardMode!=='arrange') return;
+  const chip = e.currentTarget;
+  const pid = chip.dataset.pid, slotIdx = Number(chip.dataset.slot);
+  const pitch = document.getElementById('pitch');
+  e.preventDefault();
+  const sx = e.clientX, sy = e.clientY;
+  let moved = false;
+  chip.setPointerCapture && chip.setPointerCapture(e.pointerId);
+
+  function move(ev){
+    if(!moved && Math.hypot(ev.clientX-sx, ev.clientY-sy) < 5) return;
+    moved = true; chip.classList.add('dragging');
+    const r = pitch.getBoundingClientRect();
+    const x = Math.max(3, Math.min(97, (ev.clientX-r.left)/r.width*100));
+    const y = Math.max(3, Math.min(97, (ev.clientY-r.top)/r.height*100));
+    chip.style.left = x+'%'; chip.style.top = y+'%';
+    chip._x = x; chip._y = y;
+  }
+  function up(ev){
+    document.removeEventListener('pointermove', move);
+    document.removeEventListener('pointerup', up);
+    chip.classList.remove('dragging');
+    if(!moved){
+      // แตะเฉยๆ: ถ้ามีผู้เล่นสำรองที่เลือกไว้ ให้แทนที่คนในตำแหน่งนี้
+      if(selectedPid) assignPlayerToSlot(slotIdx, selectedPid);
+      return;
+    }
+    const r = pitch.getBoundingClientRect();
+    if(ev.clientX<r.left-60 || ev.clientX>r.right+60 || ev.clientY<r.top-60 || ev.clientY>r.bottom+60){
+      removeFromPitch(pid);   // ลากออกนอกสนาม = กลับไปสำรอง
+    } else if(chip._x!==undefined){
+      freePos[pid] = {x:chip._x, y:chip._y};
+    }
+  }
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up);
+}
+
+/* ============================= PITCH ============================= */
+function renderPitch(){
+  const pitch = document.getElementById('pitch');
+  pitch.querySelectorAll('.slot,.chip').forEach(n=>n.remove());
+  const slots = FORMATIONS[currentMode][currentFormation] || [];
+  pitch.classList.toggle('has-selection', boardMode==='arrange' && !!selectedPid);
+
+  slots.forEach((s,i)=>{
+    if(assignment[i]) return;
+    const d = document.createElement('div');
+    d.className = 'slot';
+    d.style.left = s.x+'%'; d.style.top = s.y+'%';
+    d.textContent = s.r;
+    d.addEventListener('click', ()=>{ if(selectedPid && boardMode==='arrange') assignPlayerToSlot(i, selectedPid); });
+    pitch.appendChild(d);
+  });
+
+  Object.entries(assignment).forEach(([slotIdx, pid])=>{
+    const p = players.find(x=>x.id===pid); if(!p) return;
+    const slot = slots[slotIdx]; if(!slot) return;
+    const pos = freePos[pid] || {x:slot.x, y:slot.y};
+    const chip = document.createElement('div');
+    chip.className = 'chip'; chip.dataset.pid = pid; chip.dataset.slot = slotIdx;
+    chip.style.left = pos.x+'%'; chip.style.top = pos.y+'%';
+    chip.innerHTML = `
+      <div class="av">${avatarHtml(p)}${p.photo && p.number!=null ? `<span class="badge">${p.number}</span>` : ''}</div>
+      <div class="cname">${esc(p.name)}</div>
+      <button class="chip-x" aria-label="ถอดออกจากสนาม">×</button>`;
+    chip.addEventListener('pointerdown', onChipPointerDown);
+    chip.querySelector('.chip-x').addEventListener('pointerdown', ev=>ev.stopPropagation());
+    chip.querySelector('.chip-x').addEventListener('click', ev=>{ ev.stopPropagation(); removeFromPitch(pid); });
+    pitch.appendChild(chip);
+  });
+
+  const total = currentMode==='7' ? 7 : 11;
+  document.getElementById('pitchInfo').textContent = `จัดตัวแล้ว ${Object.keys(assignment).length}/${total} คน · กด × เพื่อถอดผู้เล่นออก`;
+  renderArrows();
+}
+
+/* ============================= SAVE / LOAD ============================= */
+document.getElementById('btnSaveTactic').addEventListener('click', async ()=>{
+  const nameEl = document.getElementById('tacticName');
+  const name = nameEl.value.trim();
+  if(!name) return toast('กรุณาตั้งชื่อแผนก่อนบันทึก');
+  if(!hasWork()) return toast('สนามยังว่างอยู่ — จัดผู้เล่นหรือวาดลูกศรก่อนบันทึก');
+  const btn = document.getElementById('btnSaveTactic');
+  const slots = FORMATIONS[currentMode][currentFormation];
+  const positions = Object.entries(assignment).map(([slotIdx, pid])=>{
+    const p = players.find(x=>x.id===pid) || {};
+    const s = slots[slotIdx];
+    const pos = freePos[pid] || {x:s.x, y:s.y};
+    return {playerId:pid, name:p.name||'', number:p.number==null?null:p.number, slotIndex:Number(slotIdx), x:pos.x, y:pos.y};
+  });
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+  try{
+    await withTimeout(db.collection('tactic_plans').add({
+      name, mode: currentMode, formation: currentFormation,
+      positions, arrows, createdAt: Date.now(), pin: ADMIN_PIN
+    }), 15000);
+    nameEl.value = '';
+    toast('บันทึกแผนแล้ว');
+  }catch(err){
+    console.error(err);
+    if(err.message==='TIMEOUT') toast('บันทึกช้าผิดปกติ (เกิน 15 วินาที) ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่');
+    else if(err.code==='permission-denied') toast('ไม่มีสิทธิ์บันทึก — ต้องเพิ่มกฎ tactic_plans ใน Firestore Rules');
+    else toast('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง');
+  }
+  btn.disabled = false; btn.textContent = 'บันทึกแผน';
+});
+
+function loadTactic(id){
+  const t = tactics.find(x=>x.id===id); if(!t) return;
+  if(hasWork() && !confirm('การโหลดแผนจะแทนที่สนามปัจจุบัน ต้องการทำต่อหรือไม่?')) return;
+  currentMode = t.mode;
+  document.querySelectorAll('#segMode button').forEach(x=>x.classList.toggle('active', x.dataset.mode===t.mode));
+  buildFormationOptions();
+  if(FORMATIONS[currentMode][t.formation]){
+    currentFormation = t.formation;
+    document.getElementById('formationSelect').value = t.formation;
+  }
+  resetBoard();
+  const ids = new Set(players.map(p=>p.id));
+  let missing = 0;
+  (t.positions||[]).forEach(pos=>{
+    if(!ids.has(pos.playerId)){ missing++; return; }
+    assignment[pos.slotIndex] = pos.playerId;
+    freePos[pos.playerId] = {x:pos.x, y:pos.y};
+  });
+  arrows = (t.arrows||[]).slice();
+  renderPitch(); renderBench();
+  window.scrollTo({top:0, behavior:'smooth'});
+  toast(missing ? `โหลดแผน "${t.name}" แล้ว (ข้าม ${missing} คนที่ไม่อยู่ในรายชื่อแล้ว)` : `โหลดแผน "${t.name}" แล้ว`);
+}
+
+async function deleteTactic(id){
+  const t = tactics.find(x=>x.id===id);
+  if(!confirm(`ลบแผน "${t ? t.name : ''}" ใช่หรือไม่? (ย้อนกลับไม่ได้)`)) return;
+  try{
+    await withTimeout(db.collection('tactic_plans').doc(id).delete(), 15000);
+    toast('ลบแผนแล้ว');
+  }catch(err){
+    console.error(err);
+    toast(err.code==='permission-denied' ? 'ไม่มีสิทธิ์ลบ — ตรวจสอบ Firestore Rules' : 'ลบไม่สำเร็จ ลองใหม่อีกครั้ง');
+  }
+}
+
+function renderHistory(){
+  const el = document.getElementById('historyList');
+  if(!tactics.length){ el.innerHTML = '<div class="empty-note">ยังไม่มีแผนที่บันทึกไว้</div>'; return; }
+  el.innerHTML = tactics.map(t=>{
+    const d = new Date(t.createdAt || 0);
+    const dateStr = d.toLocaleDateString('th-TH',{day:'2-digit',month:'short',year:'2-digit'}) + ' ' + d.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+    return `
+      <div class="history-item">
+        <div class="hi-tag">${esc(t.mode)} คน</div>
+        <div>
+          <div class="hi-name">${esc(t.name)}</div>
+          <div class="hi-meta">${esc(t.formation)} · ${(t.positions||[]).length} คน · ลูกศร ${(t.arrows||[]).length} · ${dateStr}</div>
+        </div>
+        <div class="hi-actions">
+          <button class="btn small primary" data-load="${esc(t.id)}">โหลด</button>
+          <button class="btn small danger" data-del="${esc(t.id)}">ลบ</button>
+        </div>
+      </div>`;
+  }).join('');
+  el.querySelectorAll('[data-load]').forEach(b=>b.addEventListener('click', ()=>loadTactic(b.dataset.load)));
+  el.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>deleteTactic(b.dataset.del)));
+}
+
+/* เริ่มทำงานหลังประกาศตัวแปรทั้งหมดแล้ว (ถ้าล็อกอินค้างไว้จากหน้าแอดมิน) */
+if (sessionStorage.getItem('bankokAdminAuthed') === 'yes') unlock();
+</script>
+</body>
+</html>
